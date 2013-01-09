@@ -1,0 +1,126 @@
+//    Aperture primitives are part of SolderSCAD.py
+//    script to convert gerber solder stencil file to OpenSCAD file 
+//    Copyright (C) 2013 Andrew Barrow
+//
+//    SolderSCAD is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    SolderSCAD is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+stencil_thickness = 0.2;	//Change this line yourself to alter Z thickness
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// Start of aperture primitives: circle, rectangle, obround, polygon                    
+// These accept the same parameters in the same order as Gerber aperture definitions    
+// 'drill' holes in pads will be rendered if specified even though they are unprintable 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Circle aperture type
+module gerb_circle (diameter, hole_X=0, hole_Y=0) {
+	if (hole_X == 0) {
+		cylinder (r = diameter/2, h=stencil_thickness, center = true);
+	}
+	else if (hole_Y == 0) {
+		difference(){
+			cylinder (r = diameter/2, h=stencil_thickness, center = true);
+			cylinder (r = hole_X/2, h=stencil_thickness, center = true);
+		}
+	}
+	else {
+		difference(){	
+			cylinder (r = diameter/2, h=stencil_thickness, center = true);
+			cube (size = [hole_X, hole_Y, stencil_thickness], center = true);
+		}	
+	} 
+}
+
+// Rectangle aperture type
+module gerb_rectangle (diam_X, diam_Y, hole_X=0, hole_Y=0) {
+	if (hole_X==0) {
+		cube (size = [diam_X, diam_Y, stencil_thickness], center = true);
+	}
+	else if (hole_Y == 0) {
+		difference(){
+			cube (size = [diam_X, diam_Y, stencil_thickness], center = true);
+			cylinder (r = hole_X/2, h=stencil_thickness, center = true);	
+		}
+	}
+	else	{
+		difference(){
+			cube (size = [diam_X, diam_Y, stencil_thickness], center = true);
+			cube (size = [hole_X, hole_Y, stencil_thickness], center = true);
+		}
+	}
+}
+
+// Obround aperture type
+module gerb_obround_primitive (diam_X, diam_Y) {
+	if (diam_X < diam_Y) {
+		union(){
+			cube(size = [diam_X, diam_Y-diam_X, stencil_thickness], center = true);
+			translate(v = [0, (diam_Y - diam_X) / 2, 0]) cylinder (r = diam_X/2, h=stencil_thickness, center = true);
+			translate(v = [0, -((diam_Y - diam_X) / 2), 0]) cylinder (r = diam_X/2, h=stencil_thickness, center = true);
+		}
+		
+	}
+	else {	// diam_X is larger
+		union(){
+			cube(size = [diam_X-diam_Y, diam_Y, stencil_thickness], center = true);
+			translate(v = [(diam_X - diam_Y) / 2, 0, 0]) cylinder (r = diam_Y/2, h=stencil_thickness, center = true);
+			translate(v = [-((diam_X - diam_Y) / 2), 0, 0]) cylinder (r = diam_Y/2, h=stencil_thickness, center = true);
+		}
+	}
+}
+
+module gerb_obround (diam_X, diam_Y, hole_X=0, hole_Y=0) {
+	if (hole_X==0) {
+		gerb_obround_primitive(diam_X, diam_Y);
+	}
+	else if (hole_Y == 0) {
+		difference(){
+			gerb_obround_primitive(diam_X, diam_Y);
+			cylinder (r = hole_X/2, h=stencil_thickness, center = true);	
+		}
+	}
+	else	{
+		difference(){
+			gerb_obround_primitive(diam_X, diam_Y);
+			cube (size = [hole_X, hole_Y, stencil_thickness], center = true);
+		}
+	}
+}
+
+// Polygon aperture type
+module gerb_polygon (diameter, num_sides, rotation=0, hole_X=0, hole_Y=0) {
+	if (hole_X == 0) {
+		rotate (a=[0,0,rotation]) cylinder (r = diameter/2, h=stencil_thickness, $fn = num_sides, center = true);
+	}
+	else if (hole_Y == 0) {
+		difference(){
+			rotate (a=[0,0,rotation]) cylinder (r = diameter/2, h=stencil_thickness, $fn = num_sides, center = true);
+			cylinder (r = hole_X/2, h=stencil_thickness, center = true);
+		}
+	}
+	else {
+		difference(){	
+			rotate (a=[0,0,rotation]) cylinder (r = diameter/2, h=stencil_thickness, $fn = num_sides, center = true);
+			cube (size = [hole_X, hole_Y, stencil_thickness], center = true);
+		}	
+	} 
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// End of aperture primitives -- everything below is generated from the input gerber    
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Start of aperture definitions
+
